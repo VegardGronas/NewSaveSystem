@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using static WorldKeeper.SaveManager;
+using static WorldKeeper.WorldKeeperManager;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif

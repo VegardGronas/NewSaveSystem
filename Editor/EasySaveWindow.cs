@@ -3,98 +3,81 @@ using UnityEngine;
 
 namespace WorldKeeper
 {
-    public class EasySaveDebugWindow : EditorWindow
+    public class WorldKeeperDebugWindow : EditorWindow
     {
         private string profileName = "Dev";
+        private Vector2 scrollPos;
 
-        [MenuItem("Tools/EasySave Debug Window")]
+        [MenuItem("Tools/WorldKeeper Debug Window")]
         public static void ShowWindow()
         {
-            GetWindow<EasySaveDebugWindow>("EasySave Debug");
+            GetWindow<WorldKeeperDebugWindow>("WorldKeeper Debug");
         }
 
         private void OnGUI()
         {
-            GUILayout.Label("EasySave Debug Tools", EditorStyles.boldLabel);
+            // Scrollable window
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
 
-            GUILayout.Space(10);
+            // Header
+            EditorGUILayout.Space();
+            GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 14 };
+            EditorGUILayout.LabelField("WorldKeeper Debug Tools", headerStyle);
+            EditorGUILayout.Space();
 
+            // Profile Section
+            GUI.backgroundColor = new Color(0.8f, 0.85f, 1f); // light blue
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.LabelField("Profile Settings", EditorStyles.boldLabel);
             profileName = EditorGUILayout.TextField("Profile name", profileName);
 
+            EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Set Profile"))
             {
-                if (Application.isPlaying)
-                {
-                    if (SaveManager.Instance != null)
-                    {
-                        SaveManager.Instance.SetProfile(profileName);
-                    }
-                }
+                if (Application.isPlaying && WorldKeeperManager.Instance != null)
+                    WorldKeeperManager.Instance.SetProfile(profileName);
             }
-
             if (GUILayout.Button("Delete Save"))
             {
-                if (Application.isPlaying)
-                {
-                    if (SaveManager.Instance != null)
-                    {
-                        Debug.Log("Game save deleted (Editor Window)!");
-                        SaveManager.Instance.DeleteSave();
-                    }
-                    else
-                    {
-                        Debug.LogError("EasySaveManager instance not found in scene!");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("Enter Play Mode to save the game.");
-                }
+                if (Application.isPlaying && WorldKeeperManager.Instance != null)
+                    WorldKeeperManager.Instance.DeleteSave();
             }
+            EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
+
+            // Game Save Section
+            GUI.backgroundColor = new Color(0.9f, 1f, 0.9f); // light green
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.LabelField("Game Save Controls", EditorStyles.boldLabel);
+
+            EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Save Game"))
             {
-                if (Application.isPlaying)
-                {
-                    if (SaveManager.Instance != null)
-                    {
-                        Debug.Log("Game saved (Editor Window)!");
-                        SaveManager.Instance.SaveGame();
-                    }
-                    else
-                    {
-                        Debug.LogError("EasySaveManager instance not found in scene!");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("Enter Play Mode to save the game.");
-                }
+                if (Application.isPlaying && WorldKeeperManager.Instance != null)
+                    WorldKeeperManager.Instance.SaveGame();
             }
-
             if (GUILayout.Button("Load Game"))
             {
-                if (Application.isPlaying)
-                {
-                    if (SaveManager.Instance != null)
-                    {
-                        SaveManager.Instance.StartCoroutine(SaveManager.Instance.LoadAsync());
-                        Debug.Log("Loading game (Editor Window)...");
-                    }
-                    else
-                    {
-                        Debug.LogError("EasySaveManager instance not found in scene!");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("Enter Play Mode to load the game.");
-                }
+                if (Application.isPlaying && WorldKeeperManager.Instance != null)
+                    WorldKeeperManager.Instance.StartCoroutine(WorldKeeperManager.Instance.LoadAsync());
             }
+            EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(10);
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
 
-            GUILayout.Label("Debug Info", EditorStyles.boldLabel);
+            // Debug Info Section
+            GUI.backgroundColor = new Color(1f, 0.9f, 0.9f); // light red
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.LabelField("Debug Info", EditorStyles.boldLabel);
 
             if (Application.isPlaying)
             {
@@ -104,6 +87,10 @@ namespace WorldKeeper
             {
                 GUILayout.Label("Enter Play Mode to see scene info.");
             }
+
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndScrollView();
         }
     }
 }
