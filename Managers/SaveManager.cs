@@ -6,15 +6,17 @@ using UnityEngine;
 
 namespace WorldKeeper
 {
-    public class EasySaveManager : MonoBehaviour
+    public class SaveManager : MonoBehaviour
     {
-        public static EasySaveManager Instance { get; private set; }
+        public static SaveManager Instance { get; private set; }
 
         public static event Action<ContentLoadedEvent> OnContentLoaded;
 
         [SerializeField] private string defaultProfile = "Dev";
 
         private string savePath;
+        private string rootPath;
+        private string rootFolder = "WorldKeeper";
 
         public class ContentLoadedEvent
         {
@@ -31,6 +33,12 @@ namespace WorldKeeper
             }
             Instance = this;
 
+            // Create root folder for all saves
+            rootPath = Path.Combine(Application.persistentDataPath, rootFolder);
+            if (!Directory.Exists(rootPath))
+                Directory.CreateDirectory(rootPath);
+
+            // Set default profile AFTER rootPath exists
             SetProfile(defaultProfile);
         }
 
@@ -38,11 +46,15 @@ namespace WorldKeeper
         {
             yield return new WaitForEndOfFrame();
             StartCoroutine(LoadAsync());
+        
+            Debug.Log("YOu have " + GetProfiles().Length + " Profiles");
         }
 
         public void SetProfile(string profile)
         {
-            savePath = Application.persistentDataPath + "/" + profile + ".json";
+            // Use Path.Combine to avoid platform path issues
+            savePath = Path.Combine(rootPath, profile + ".json");
+            Debug.Log("Profile set to: " + savePath);
         }
 
         public void SaveGame()
@@ -81,6 +93,19 @@ namespace WorldKeeper
                 File.Delete(savePath);
                 Debug.Log("Save file deleted " + savePath);
             }
+        }
+
+        public string[] GetProfiles()
+        {
+            if (!Directory.Exists(rootPath))
+                return Array.Empty<string>();
+
+            // Get only filenames without full path and without extension
+            string[] files = Directory.GetFiles(rootPath, "*.json");
+            for (int i = 0; i < files.Length; i++)
+                files[i] = Path.GetFileNameWithoutExtension(files[i]);
+
+            return files;
         }
 
         public IEnumerator LoadAsync()

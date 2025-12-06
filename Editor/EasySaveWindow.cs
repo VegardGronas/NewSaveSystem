@@ -5,6 +5,8 @@ namespace WorldKeeper
 {
     public class EasySaveDebugWindow : EditorWindow
     {
+        private string profileName = "Dev";
+
         [MenuItem("Tools/EasySave Debug Window")]
         public static void ShowWindow()
         {
@@ -17,14 +19,27 @@ namespace WorldKeeper
 
             GUILayout.Space(10);
 
+            profileName = EditorGUILayout.TextField("Profile name", profileName);
+
+            if (GUILayout.Button("Set Profile"))
+            {
+                if (Application.isPlaying)
+                {
+                    if (SaveManager.Instance != null)
+                    {
+                        SaveManager.Instance.SetProfile(profileName);
+                    }
+                }
+            }
+
             if (GUILayout.Button("Delete Save"))
             {
                 if (Application.isPlaying)
                 {
-                    if (EasySaveManager.Instance != null)
+                    if (SaveManager.Instance != null)
                     {
                         Debug.Log("Game save deleted (Editor Window)!");
-                        EasySaveManager.Instance.DeleteSave();
+                        SaveManager.Instance.DeleteSave();
                     }
                     else
                     {
@@ -41,10 +56,10 @@ namespace WorldKeeper
             {
                 if (Application.isPlaying)
                 {
-                    if (EasySaveManager.Instance != null)
+                    if (SaveManager.Instance != null)
                     {
                         Debug.Log("Game saved (Editor Window)!");
-                        EasySaveManager.Instance.SaveGame();
+                        SaveManager.Instance.SaveGame();
                     }
                     else
                     {
@@ -61,9 +76,9 @@ namespace WorldKeeper
             {
                 if (Application.isPlaying)
                 {
-                    if (EasySaveManager.Instance != null)
+                    if (SaveManager.Instance != null)
                     {
-                        EasySaveManager.Instance.StartCoroutine(EasySaveManager.Instance.LoadAsync());
+                        SaveManager.Instance.StartCoroutine(SaveManager.Instance.LoadAsync());
                         Debug.Log("Loading game (Editor Window)...");
                     }
                     else
