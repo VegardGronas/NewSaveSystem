@@ -1,37 +1,40 @@
 using System;
 using UnityEngine;
 
-public class RememberTransform : BaseSave
+namespace WorldKeeper
 {
-    public override string SaveData()
+    public class RememberTransform : BaseSave
     {
-        TransformData data = new TransformData
+        public override string SaveData()
         {
-            position = transform.position,
-            rotation = transform.rotation,
-            scale = transform.localScale
-        };
+            TransformData data = new TransformData
+            {
+                position = transform.position,
+                rotation = transform.rotation,
+                scale = transform.localScale
+            };
 
-        string json = JsonUtility.ToJson(data);
-        return json;
+            string json = JsonUtility.ToJson(data);
+            return json;
+        }
+
+        public override void LoadData(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+                return;
+
+            TransformData data = JsonUtility.FromJson<TransformData>(json);
+            transform.position = data.position;
+            transform.rotation = data.rotation;
+            transform.localScale = data.scale;
+        }
     }
 
-    public override void LoadData(string json)
+    [Serializable]
+    public class TransformData
     {
-        if (string.IsNullOrEmpty(json))
-            return;
-
-        TransformData data = JsonUtility.FromJson<TransformData>(json);
-        transform.position = data.position;
-        transform.rotation = data.rotation;
-        transform.localScale = data.scale;
+        public Vector3 position;
+        public Quaternion rotation;
+        public Vector3 scale;
     }
-}
-
-[Serializable]
-public class TransformData
-{
-    public Vector3 position;
-    public Quaternion rotation;
-    public Vector3 scale;
 }

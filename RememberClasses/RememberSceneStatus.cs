@@ -1,29 +1,32 @@
 using System;
 using UnityEngine;
 
-public class RememberSceneStatus : BaseSave
+namespace WorldKeeper
 {
-    public override string SaveData()
+    public class RememberSceneStatus : BaseSave
     {
-        SceneStatusData data = new SceneStatusData();
-        data.IsActive = gameObject.activeInHierarchy;
+        public override string SaveData()
+        {
+            SceneStatusData data = new SceneStatusData();
+            data.IsActive = gameObject.activeInHierarchy;
 
-        string json = JsonUtility.ToJson(data);
-        return json;
+            string json = JsonUtility.ToJson(data);
+            return json;
+        }
+
+        public override void LoadData(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+                return;
+
+            SceneStatusData data = JsonUtility.FromJson<SceneStatusData>(json);
+            gameObject.SetActive(data.IsActive);
+        }
     }
 
-    public override void LoadData(string json)
+    [Serializable]
+    public class SceneStatusData
     {
-        if (string.IsNullOrEmpty(json))
-            return;
-
-        SceneStatusData data = JsonUtility.FromJson<SceneStatusData>(json);
-        gameObject.SetActive(data.IsActive);
+        public bool IsActive = true;
     }
-}
-
-[Serializable]
-public class SceneStatusData
-{
-    public bool IsActive = true;
 }
