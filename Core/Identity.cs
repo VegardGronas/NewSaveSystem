@@ -101,9 +101,20 @@ namespace WorldKeeper
         // Ensures runtime safety: if something spawned without an ID
         private void EnsureRuntimeID()
         {
+            // If ID is missing, generate one
             if (string.IsNullOrEmpty(uniqueID))
+            {
                 uniqueID = Guid.NewGuid().ToString();
+                return;
+            }
+
+            // If ID already exists in the tracker, this is a duplicated object -> give new ID
+            if (IdentityTracker.Contains(uniqueID))
+            {
+                uniqueID = Guid.NewGuid().ToString();
+            }
         }
+
 
         public void OnGameLoaded(ContentLoadedEvent evnt)
         {
