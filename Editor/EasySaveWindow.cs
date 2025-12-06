@@ -15,14 +15,34 @@ public class EasySaveDebugWindow : EditorWindow
 
         GUILayout.Space(10);
 
+        if(GUILayout.Button("Delete Save"))
+        {
+            if (Application.isPlaying)
+            {
+                if (EasySaveManager.Instance != null)
+                {
+                    Debug.Log("Game save deleted (Editor Window)!");
+                    EasySaveManager.Instance.DeleteSave();
+                }
+                else
+                {
+                    Debug.LogError("EasySaveManager instance not found in scene!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("Enter Play Mode to save the game.");
+            }
+        }
+
         if (GUILayout.Button("Save Game"))
         {
             if (Application.isPlaying)
             {
                 if (EasySaveManager.Instance != null)
                 {
-                    EasySaveManager.Instance.SaveGame();
                     Debug.Log("Game saved (Editor Window)!");
+                    EasySaveManager.Instance.SaveGame();
                 }
                 else
                 {

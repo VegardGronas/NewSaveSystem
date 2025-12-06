@@ -14,6 +14,20 @@ public static class IdentityTracker
         return identities;
     }
 
+    public static bool Contains(Identity identity)
+    {
+        return identities.Contains(identity);
+    }
+
+    public static bool Contains(string uniqueID)
+    {
+        foreach (var identity in identities)
+        {
+            if(identity.UniqueID == uniqueID) return true;
+        }
+        return false;
+    }
+
     public static void Register(Identity identity)
     {
         if (!identities.Contains(identity))

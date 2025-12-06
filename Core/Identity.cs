@@ -1,34 +1,91 @@
 using System;
 using UnityEngine;
+using System.Security.Principal;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using static EasySaveManager;
 
 public class Identity : MonoBehaviour
 {
     [SerializeField] private string uniqueID;
+    [SerializeField] private string prefabPath;
     public string UniqueID => uniqueID;
-    public BaseSave[] SaveComponents;
-    public bool wasLoadedFromSave { get; private set; } = false;
+    public string PrefabPath => prefabPath;
 
+    public BaseSave[] SaveComponents;
+    public bool WasLoadedFromSave { get; private set; } = false;
+    
     private void Awake()
     {
+        EnsureRuntimeID();
         IdentityTracker.Register(this);
         AddSaveComponents();
     }
 
+    public void SetUniqueID(string id) => uniqueID = id;
+
+    public void RefreshSaveComponents() =>
+        SaveComponents = GetComponents<BaseSave>();
+
+
+#if UNITY_EDITOR
     private void OnValidate()
     {
-        if(uniqueID == "")
+        // --- If editing a project prefab asset ---
+        if (PrefabUtility.IsPartOfPrefabAsset(this))
+        {
+            uniqueID = ""; // prefabs should never have IDs
+
+            // Try to find the Resources-relative path
+            string assetPath = AssetDatabase.GetAssetPath(gameObject);
+
+            if (assetPath.Contains("Resources/"))
+            {
+                // Extract "folder/subfolder/name"
+                prefabPath = ExtractResourcesPath(assetPath);
+            }
+            else
+            {
+                // Not in Resources, warn user
+                prefabPath = "";
+                // Debug.LogWarning($"{name} prefab is not inside a Resources folder. It cannot be loaded by EasySave.");
+            }
+
+            return;
+        }
+
+        // --- If editing a scene object ---
+        if (string.IsNullOrEmpty(uniqueID))
+        {
             uniqueID = Guid.NewGuid().ToString();
+            EditorUtility.SetDirty(this);
+        }
     }
+
+    private string ExtractResourcesPath(string assetPath)
+    {
+        // Example:
+        // assetPath = "Assets/MyGame/Resources/Buildings/Walls/WoodWall.prefab"
+
+        int index = assetPath.IndexOf("Resources/") + "Resources/".Length;
+
+        string subPath = assetPath.Substring(index); // "Buildings/Walls/WoodWall.prefab"
+        subPath = subPath.Replace(".prefab", "");    // remove extension
+
+        return subPath; // final result: "Buildings/Walls/WoodWall"
+    }
+#endif
 
     private void OnEnable()
     {
-        EasySaveManager.OnContentLoaded += OnGameLoaded;
+        OnContentLoaded += OnGameLoaded;
     }
 
     private void OnDisable()
     {
-        EasySaveManager.OnContentLoaded -= OnGameLoaded;
+        OnContentLoaded -= OnGameLoaded;
     }
 
     private void OnDestroy()
@@ -41,11 +98,18 @@ public class Identity : MonoBehaviour
         SaveComponents = GetComponents<BaseSave>();
     }
 
+    // Ensures runtime safety: if something spawned without an ID
+    private void EnsureRuntimeID()
+    {
+        if (string.IsNullOrEmpty(uniqueID))
+            uniqueID = Guid.NewGuid().ToString();
+    }
+
     public void OnGameLoaded(ContentLoadedEvent evnt)
     {
-        if (wasLoadedFromSave)
+        if (WasLoadedFromSave)
         {
-            Debug.Log("Was loaded from save: " + evnt.wasContentLoadedFromSave + " for " + gameObject.name);
+            Debug.Log($"Was loaded from save: {evnt.wasContentLoadedFromSave} for {gameObject.name}");
             return;
         }
     }
