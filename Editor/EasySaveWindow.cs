@@ -1,91 +1,94 @@
 using UnityEditor;
 using UnityEngine;
 
-public class EasySaveDebugWindow : EditorWindow
+namespace WorldKeeper
 {
-    [MenuItem("Tools/EasySave Debug Window")]
-    public static void ShowWindow()
+    public class EasySaveDebugWindow : EditorWindow
     {
-        GetWindow<EasySaveDebugWindow>("EasySave Debug");
-    }
-
-    private void OnGUI()
-    {
-        GUILayout.Label("EasySave Debug Tools", EditorStyles.boldLabel);
-
-        GUILayout.Space(10);
-
-        if(GUILayout.Button("Delete Save"))
+        [MenuItem("Tools/EasySave Debug Window")]
+        public static void ShowWindow()
         {
-            if (Application.isPlaying)
+            GetWindow<EasySaveDebugWindow>("EasySave Debug");
+        }
+
+        private void OnGUI()
+        {
+            GUILayout.Label("EasySave Debug Tools", EditorStyles.boldLabel);
+
+            GUILayout.Space(10);
+
+            if (GUILayout.Button("Delete Save"))
             {
-                if (EasySaveManager.Instance != null)
+                if (Application.isPlaying)
                 {
-                    Debug.Log("Game save deleted (Editor Window)!");
-                    EasySaveManager.Instance.DeleteSave();
+                    if (EasySaveManager.Instance != null)
+                    {
+                        Debug.Log("Game save deleted (Editor Window)!");
+                        EasySaveManager.Instance.DeleteSave();
+                    }
+                    else
+                    {
+                        Debug.LogError("EasySaveManager instance not found in scene!");
+                    }
                 }
                 else
                 {
-                    Debug.LogError("EasySaveManager instance not found in scene!");
+                    Debug.LogWarning("Enter Play Mode to save the game.");
                 }
             }
-            else
-            {
-                Debug.LogWarning("Enter Play Mode to save the game.");
-            }
-        }
 
-        if (GUILayout.Button("Save Game"))
-        {
-            if (Application.isPlaying)
+            if (GUILayout.Button("Save Game"))
             {
-                if (EasySaveManager.Instance != null)
+                if (Application.isPlaying)
                 {
-                    Debug.Log("Game saved (Editor Window)!");
-                    EasySaveManager.Instance.SaveGame();
+                    if (EasySaveManager.Instance != null)
+                    {
+                        Debug.Log("Game saved (Editor Window)!");
+                        EasySaveManager.Instance.SaveGame();
+                    }
+                    else
+                    {
+                        Debug.LogError("EasySaveManager instance not found in scene!");
+                    }
                 }
                 else
                 {
-                    Debug.LogError("EasySaveManager instance not found in scene!");
+                    Debug.LogWarning("Enter Play Mode to save the game.");
                 }
             }
-            else
-            {
-                Debug.LogWarning("Enter Play Mode to save the game.");
-            }
-        }
 
-        if (GUILayout.Button("Load Game"))
-        {
-            if (Application.isPlaying)
+            if (GUILayout.Button("Load Game"))
             {
-                if (EasySaveManager.Instance != null)
+                if (Application.isPlaying)
                 {
-                    EasySaveManager.Instance.StartCoroutine(EasySaveManager.Instance.LoadAsync());
-                    Debug.Log("Loading game (Editor Window)...");
+                    if (EasySaveManager.Instance != null)
+                    {
+                        EasySaveManager.Instance.StartCoroutine(EasySaveManager.Instance.LoadAsync());
+                        Debug.Log("Loading game (Editor Window)...");
+                    }
+                    else
+                    {
+                        Debug.LogError("EasySaveManager instance not found in scene!");
+                    }
                 }
                 else
                 {
-                    Debug.LogError("EasySaveManager instance not found in scene!");
+                    Debug.LogWarning("Enter Play Mode to load the game.");
                 }
+            }
+
+            GUILayout.Space(10);
+
+            GUILayout.Label("Debug Info", EditorStyles.boldLabel);
+
+            if (Application.isPlaying)
+            {
+                GUILayout.Label($"Identities in Scene: {IdentityTracker.GetIdentitiesAsArray().Length}");
             }
             else
             {
-                Debug.LogWarning("Enter Play Mode to load the game.");
+                GUILayout.Label("Enter Play Mode to see scene info.");
             }
-        }
-
-        GUILayout.Space(10);
-
-        GUILayout.Label("Debug Info", EditorStyles.boldLabel);
-
-        if (Application.isPlaying)
-        {
-            GUILayout.Label($"Identities in Scene: {IdentityTracker.GetIdentitiesAsArray().Length}");
-        }
-        else
-        {
-            GUILayout.Label("Enter Play Mode to see scene info.");
         }
     }
 }

@@ -1,46 +1,50 @@
 using System.Collections.Generic;
 
-public static class IdentityTracker 
+namespace WorldKeeper
 {
-    private static List<Identity> identities = new();
-
-    public static Identity[] GetIdentitiesAsArray()
+    public static class IdentityTracker
     {
-        return identities.ToArray();
-    }
+        private static List<Identity> identities = new();
 
-    public static List<Identity> GetIdentitiesAsList()
-    {
-        return identities;
-    }
-
-    public static bool Contains(Identity identity)
-    {
-        return identities.Contains(identity);
-    }
-
-    public static bool Contains(string uniqueID)
-    {
-        foreach (var identity in identities)
+        public static Identity[] GetIdentitiesAsArray()
         {
-            if(identity.UniqueID == uniqueID) return true;
+            return identities.ToArray();
         }
-        return false;
+
+        public static List<Identity> GetIdentitiesAsList()
+        {
+            return identities;
+        }
+
+        public static bool Contains(Identity identity)
+        {
+            return identities.Contains(identity);
+        }
+
+        public static bool Contains(string uniqueID)
+        {
+            foreach (var identity in identities)
+            {
+                if (identity.UniqueID == uniqueID) return true;
+            }
+            return false;
+        }
+
+        public static void Register(Identity identity)
+        {
+            if (!identities.Contains(identity))
+            {
+                identities.Add(identity);
+            }
+        }
+
+        public static void Unregister(Identity identity)
+        {
+            if (identities.Contains(identity))
+            {
+                identities.Remove(identity);
+            }
+        }
     }
 
-    public static void Register(Identity identity)
-    {
-        if (!identities.Contains(identity))
-        {
-            identities.Add(identity);
-        }
-    }
-
-    public static void Unregister(Identity identity)
-    {
-        if (identities.Contains(identity))
-        {
-            identities.Remove(identity);
-        }
-    }
 }

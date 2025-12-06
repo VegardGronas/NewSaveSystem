@@ -4,177 +4,182 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-public class EasySaveManager : MonoBehaviour
+namespace WorldKeeper
 {
-    public static EasySaveManager Instance { get; private set; }
-
-    public static event Action<ContentLoadedEvent> OnContentLoaded;
-
-    [SerializeField] private string defaultProfile = "Dev";
-
-    private string savePath;
-
-    private void Awake()
+    public class EasySaveManager : MonoBehaviour
     {
-        if(Instance != null && Instance != this)
+        public static EasySaveManager Instance { get; private set; }
+
+        public static event Action<ContentLoadedEvent> OnContentLoaded;
+
+        [SerializeField] private string defaultProfile = "Dev";
+
+        private string savePath;
+
+        public class ContentLoadedEvent
         {
-            Destroy(this.gameObject);
-            return;
+            public bool wasContentLoadedFromSave = false;
+            public float loadTime;
         }
-        Instance = this;
 
-        SetProfile(defaultProfile);
-    }
-
-    private IEnumerator Start()
-    {
-        yield return new WaitForEndOfFrame();
-        StartCoroutine(LoadAsync());
-    }
-
-    public void SetProfile(string profile)
-    {
-        savePath = Application.persistentDataPath + "/" + profile + ".json";
-    }
-
-    public void SaveGame()
-    {
-        Identity[] identities = IdentityTracker.GetIdentitiesAsArray();
-        List<SavedObjectData> allData = new List<SavedObjectData>();
-
-        foreach (Identity identity in identities)
+        private void Awake()
         {
-            BaseSave[] saveComponents = identity.SaveComponents;
-            foreach (BaseSave baseSave in saveComponents)
+            if (Instance != null && Instance != this)
             {
-                string json = baseSave.SaveData(); // <-- each component returns its own JSON
+                Destroy(this.gameObject);
+                return;
+            }
+            Instance = this;
 
-                allData.Add(new SavedObjectData
+            SetProfile(defaultProfile);
+        }
+
+        private IEnumerator Start()
+        {
+            yield return new WaitForEndOfFrame();
+            StartCoroutine(LoadAsync());
+        }
+
+        public void SetProfile(string profile)
+        {
+            savePath = Application.persistentDataPath + "/" + profile + ".json";
+        }
+
+        public void SaveGame()
+        {
+            Identity[] identities = IdentityTracker.GetIdentitiesAsArray();
+            List<SavedObjectData> allData = new List<SavedObjectData>();
+
+            foreach (Identity identity in identities)
+            {
+                BaseSave[] saveComponents = identity.SaveComponents;
+                foreach (BaseSave baseSave in saveComponents)
                 {
-                    UniqueID = identity.UniqueID,
-                    PrefabName = identity.PrefabPath,
-                    ComponentType = baseSave.GetType().Name, // optional, for easier debugging or future-proofing
-                    CustomDataJson = json
+                    string json = baseSave.SaveData(); // <-- each component returns its own JSON
+
+                    allData.Add(new SavedObjectData
+                    {
+                        UniqueID = identity.UniqueID,
+                        PrefabName = identity.PrefabPath,
+                        ComponentType = baseSave.GetType().Name, // optional, for easier debugging or future-proofing
+                        CustomDataJson = json
+                    });
+                }
+            }
+
+            // Now you can serialize `allData` to disk, e.g., as JSON
+            string finalJson = JsonUtility.ToJson(new SaveFile { Objects = allData }, true);
+            File.WriteAllText(savePath, finalJson);
+
+            Debug.Log("Saved to path: " + savePath);
+        }
+
+        public void DeleteSave()
+        {
+            if (File.Exists(savePath))
+            {
+                File.Delete(savePath);
+                Debug.Log("Save file deleted " + savePath);
+            }
+        }
+
+        public IEnumerator LoadAsync()
+        {
+            float startTime = Time.realtimeSinceStartup;
+
+            // 1. No file? Exit early.
+            if (!File.Exists(savePath))
+            {
+                float loadTime = Time.realtimeSinceStartup - startTime;
+                OnContentLoaded?.Invoke(new ContentLoadedEvent
+                {
+                    wasContentLoadedFromSave = false,
+                    loadTime = loadTime
                 });
-            }
-        }
-
-        // Now you can serialize `allData` to disk, e.g., as JSON
-        string finalJson = JsonUtility.ToJson(new SaveFile { Objects = allData }, true);
-        File.WriteAllText(savePath, finalJson);
-
-        Debug.Log("Saved to path: " + savePath);
-    }
-
-    public void DeleteSave()
-    {
-        if(File.Exists(savePath))
-        {
-            File.Delete(savePath);
-            Debug.Log("Save file deleted " + savePath);
-        }
-    }
-
-    public IEnumerator LoadAsync()
-    {
-        // 1. No file? Exit early.
-        if (!File.Exists(savePath))
-        {
-            OnContentLoaded?.Invoke(new ContentLoadedEvent { wasContentLoadedFromSave = false });
-            yield break;
-        }
-
-        // 2. Load save file
-        string json = File.ReadAllText(savePath);
-        SaveFile saveFile = JsonUtility.FromJson<SaveFile>(json);
-
-        int processed = 0;
-        int batchSize = 5;
-
-        //----------------------------------------------------------------------
-        // STEP 1: Restore any identities missing from the scene
-        //----------------------------------------------------------------------
-
-        foreach (var saved in saveFile.Objects)
-        {
-            if (IdentityTracker.Contains(saved.UniqueID))
-            {
-                // Already in the scene
-                continue;
+                yield break;
             }
 
-            // Try to load the prefab
-            Identity prefab = Resources.Load<Identity>(saved.PrefabName);
-            if (prefab == null)
+            // 2. Load save file
+            string json = File.ReadAllText(savePath);
+            SaveFile saveFile = JsonUtility.FromJson<SaveFile>(json);
+
+            int processed = 0;
+            int batchSize = 5;
+
+            //----------------------------------------------------------------------
+            // STEP 1: Restore any identities missing from the scene
+            //----------------------------------------------------------------------
+
+            foreach (var saved in saveFile.Objects)
             {
-                Debug.LogWarning(
-                    $"[EasySave] Missing prefab '{saved.PrefabName}' for saved object '{saved.UniqueID}'."
-                );
-                continue;
-            }
-
-            // Spawn it
-            Identity instance = Instantiate(prefab);
-            instance.name = prefab.name; // optional: avoid "(Clone)"
-            instance.SetUniqueID(saved.UniqueID); // safer than direct access
-
-            // Force update of SaveComponents
-            instance.RefreshSaveComponents();
-
-            processed++;
-            if (processed % batchSize == 0)
-                yield return null;
-        }
-
-        //----------------------------------------------------------------------
-        // STEP 2: Load component data into each identity
-        //----------------------------------------------------------------------
-
-        Identity[] identities = IdentityTracker.GetIdentitiesAsArray();
-
-        foreach (Identity identity in identities)
-        {
-            foreach (BaseSave baseSave in identity.SaveComponents)
-            {
-                var savedData = saveFile.Objects.Find(d =>
-                    d.UniqueID == identity.UniqueID &&
-                    d.ComponentType == baseSave.GetType().Name
-                );
-
-                if (savedData != null)
+                if (!IdentityTracker.Contains(saved.UniqueID))
                 {
-                    baseSave.LoadData(savedData.CustomDataJson);
+                    Identity prefab = Resources.Load<Identity>(saved.PrefabName);
+                    if (prefab != null)
+                    {
+                        Identity instance = Instantiate(prefab);
+                        instance.name = prefab.name;
+                        instance.SetUniqueID(saved.UniqueID);
+                        instance.RefreshSaveComponents();
+                    }
                 }
 
                 processed++;
                 if (processed % batchSize == 0)
                     yield return null;
             }
+
+            //----------------------------------------------------------------------
+            // STEP 2: Load data into existing identities
+            //----------------------------------------------------------------------
+
+            Identity[] identities = IdentityTracker.GetIdentitiesAsArray();
+
+            foreach (Identity identity in identities)
+            {
+                foreach (BaseSave baseSave in identity.SaveComponents)
+                {
+                    var savedData = saveFile.Objects.Find(d =>
+                        d.UniqueID == identity.UniqueID &&
+                        d.ComponentType == baseSave.GetType().Name
+                    );
+
+                    if (savedData != null)
+                        baseSave.LoadData(savedData.CustomDataJson);
+
+                    processed++;
+                    if (processed % batchSize == 0)
+                        yield return null;
+                }
+            }
+
+            //----------------------------------------------------------------------
+            // DONE — measure load time
+            //----------------------------------------------------------------------
+
+            float finalLoadTime = Time.realtimeSinceStartup - startTime;
+
+            OnContentLoaded?.Invoke(new ContentLoadedEvent
+            {
+                wasContentLoadedFromSave = true,
+                loadTime = finalLoadTime
+            });
         }
-
-        //----------------------------------------------------------------------
-        // DONE
-        //----------------------------------------------------------------------
-        OnContentLoaded?.Invoke(new ContentLoadedEvent { wasContentLoadedFromSave = true });
     }
 
-    public class ContentLoadedEvent
+    [Serializable]
+    public class SavedObjectData
     {
-        public bool wasContentLoadedFromSave = false;
+        public string UniqueID;
+        public string PrefabName;
+        public string ComponentType;
+        public string CustomDataJson;
     }
-}
 
-[Serializable]
-public class SavedObjectData
-{
-    public string UniqueID;
-    public string PrefabName;
-    public string ComponentType;
-    public string CustomDataJson;
-}
+    [Serializable]
+    public class SaveFile
+    {
+        public List<SavedObjectData> Objects;
+    }
 
-[Serializable]
-public class SaveFile
-{
-    public List<SavedObjectData> Objects;
 }

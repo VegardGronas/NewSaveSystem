@@ -1,39 +1,42 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(Identity))]
-public class IdentityEditor : Editor
+namespace WorldKeeper
 {
-    public override void OnInspectorGUI()
+    [CustomEditor(typeof(Identity))]
+    public class IdentityEditor : Editor
     {
-        base.OnInspectorGUI();
-
-        Identity identity = (Identity)target;
-
-        EditorGUILayout.Space();
-        EditorGUILayout.LabelField("EasySave Debug Info", EditorStyles.boldLabel);
-
-        // Is prefab or instance?
-        bool isPrefab = PrefabUtility.IsPartOfPrefabAsset(identity);
-        bool isInScene = !isPrefab;
-
-        EditorGUILayout.LabelField("In Scene:", isInScene ? " Yes" : " No (Prefab)");
-
-        if(Application.isPlaying)
+        public override void OnInspectorGUI()
         {
-            // Registration status
-            bool registered = IdentityTracker.Contains(identity);
-            EditorGUILayout.LabelField("Registered:", registered ? " Yes" : " No");
+            base.OnInspectorGUI();
 
-            EditorGUILayout.Space(10);
+            Identity identity = (Identity)target;
 
-            if (!registered && isInScene)
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("EasySave Debug Info", EditorStyles.boldLabel);
+
+            // Is prefab or instance?
+            bool isPrefab = PrefabUtility.IsPartOfPrefabAsset(identity);
+            bool isInScene = !isPrefab;
+
+            EditorGUILayout.LabelField("In Scene:", isInScene ? " Yes" : " No (Prefab)");
+
+            if (Application.isPlaying)
             {
-                EditorGUILayout.HelpBox("This Identity is NOT registered. Is Awake disabled or object inactive?", MessageType.Warning);
-            }
-        }
+                // Registration status
+                bool registered = IdentityTracker.Contains(identity);
+                EditorGUILayout.LabelField("Registered:", registered ? " Yes" : " No");
 
-        // Unique ID
-        EditorGUILayout.LabelField("Unique ID:", identity.UniqueID);
+                EditorGUILayout.Space(10);
+
+                if (!registered && isInScene)
+                {
+                    EditorGUILayout.HelpBox("This Identity is NOT registered. Is Awake disabled or object inactive?", MessageType.Warning);
+                }
+            }
+
+            // Unique ID
+            EditorGUILayout.LabelField("Unique ID:", identity.UniqueID);
+        }
     }
 }
